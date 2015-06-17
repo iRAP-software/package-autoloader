@@ -8,6 +8,7 @@
  * WARNING: Autoloading is not available if using PHP in CLI INTERACTIVE mode, however using on CLI
  * scripts is fine.
  */
+namespace iRAP\Autoloader;
 
 class Autoloader
 {
