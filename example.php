@@ -2,8 +2,6 @@
 
 require_once(__DIR__ . '/vendor/autoload.php');
 
-$sid = '';
-$auth_token = '';
 $directories = array(
     __DIR__,
     __DIR__ . '/controllers',
