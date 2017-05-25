@@ -3,6 +3,7 @@ This is a package for PHP which simplifies the setup of autoloading.
 ## Example Usage
 
 ```
+<?php
 require_once(__DIR__ . '/vendor/autoload.php'); # this autoloads all vendor packages
 
 # Create an array holding the paths to all the folders that contain your classes.
