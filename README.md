@@ -1,4 +1,4 @@
-This is a package for PHP which simplifies the setup of autoloading. This requires your class names to exactly reflect your file names. E.g. the class called `MyClass` should be in a file called `MyClass.php`. You should use unique class names though.
+This is a package for PHP which simplifies the setup of autoloading. This requires your class names to exactly reflect your file names. E.g. the class called `MyClass` should be in a file called `MyClass.php`. You should use unique class names.
 
 ## Example Usage
 
