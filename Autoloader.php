@@ -28,7 +28,7 @@ class Autoloader
     public function __construct($classDirs, Closure $conversionFunction=null)
     {
         $this->m_classDirs = $classDirs; # specify your model/utility/library folders here
-
+        
         # If a conversion function has not been specified, then use our own default.
         if ($conversionFunction === null)
         {
@@ -36,7 +36,7 @@ class Autoloader
             {
                 return Autoloader::convertClassNameToFileName($className);
             };
-
+            
             $this->m_conversionFunction = $conversionFunction;
         }
         else
@@ -65,7 +65,7 @@ class Autoloader
         $result = false;
         
         $filename = call_user_func($this->m_conversionFunction, $className);
-
+        
         foreach ($this->m_classDirs as $potentialFolder)
         {
             $absoluteFilePath = $potentialFolder . "/" . $filename;
@@ -77,7 +77,7 @@ class Autoloader
                 {
                     $errorMessage = 'Auto loader found two classes with the same name. ' .
                                     'Please manually specify, rather than rely on auto loader';
-                    Core::throwException($errorMessage);
+                    throw new \Exception($errorMessage);
                 }
                 
                 require_once($absoluteFilePath);
@@ -89,8 +89,8 @@ class Autoloader
         
         return $result;
     }
-
-
+    
+    
     /**
      * Given a class name, this function will convert it to the relevant filename
      * This function could be improved to handle abstract classes later which do not follow the 
