@@ -62,31 +62,42 @@ class Autoloader
      */
     public function loaderCallback($className)
     {
-        $result = false;
-        
-        $filename = call_user_func($this->m_conversionFunction, $className);
-        
-        foreach ($this->m_classDirs as $potentialFolder)
+        if (class_exists($className, false))
         {
-            $absoluteFilePath = $potentialFolder . "/" . $filename;
-            
-            if (file_exists($absoluteFilePath))
+            $result = true;
+        }
+        else
+        {
+            $result = false;
+
+            $filename = call_user_func($this->m_conversionFunction, $className);
+
+            // position of slash in the class, to denote namespace presence
+            $lastBackslashPositionIfNamespacePresent = strrpos($filename, '\\') ?: -1;
+            $lastBackslashPositionIfNamespacePresent++; // to get the actual position, that's why -1 on the line before
+            $filenameWithoutNamespace = substr($filename, $lastBackslashPositionIfNamespacePresent);
+
+            foreach ($this->m_classDirs as $potentialFolder)
             {
-                # Check that we havent already managed to find a match, in which case throw an error
-                if ($result)
+                $absoluteFilePath         = $potentialFolder . "/" . $filenameWithoutNamespace;
+
+                if (file_exists($absoluteFilePath))
                 {
-                    $errorMessage = 'Auto loader found two classes with the same name. ' .
-                                    'Please manually specify, rather than rely on auto loader';
-                    throw new \Exception($errorMessage);
+                    require_once($absoluteFilePath);
+
+                    if(class_exists($className, false))
+                    {
+                        $result = true;
+                        break;
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
-                
-                require_once($absoluteFilePath);
-                $result = true;
-                
-                # do NOT break here as we want to check for and prevent potential 'class collisions'
             }
         }
-        
+
         return $result;
     }
     
