@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This singleton class automatically includes classes based on the name of the class
  * It alleviates the need of having a require_once() statement every time you want to 
@@ -8,47 +7,42 @@
  * WARNING: Autoloading is not available if using PHP in CLI INTERACTIVE mode, however using on CLI
  * scripts is fine.
  */
+
 namespace iRAP\Autoloader;
 
 class Autoloader
 {
-    private $m_classDirs = array();
+    private $m_classDirs          = array();
     private $m_conversionFunction = null;
-    
+
     /**
      * The constructor for this class. It is private because this is a singleton that should only
      * be instatiated once by itself.
      * @param Array $classDirs - array of all the folder paths to look in for classes.
-     * @param Closure $conversionFunction - (optional) provide An annonymous function to convert 
-     *                                      a given class name to the filename that it can be loaded 
+     * @param Closure $conversionFunction - (optional) provide An annonymous function to convert
+     *                                      a given class name to the filename that it can be loaded
      *                                      from. If not provided then the Zend standard naming
      *                                      convention is assumed.
      * @return void
-    */
-    public function __construct($classDirs, Closure $conversionFunction=null)
+     */
+    public function __construct($classDirs, Closure $conversionFunction = null)
     {
         $this->m_classDirs = $classDirs; # specify your model/utility/library folders here
-        
         # If a conversion function has not been specified, then use our own default.
-        if ($conversionFunction === null)
-        {
-            $conversionFunction = function($className)
-            {
+        if ($conversionFunction === null) {
+            $conversionFunction = function($className) {
                 return Autoloader::convertClassNameToFileName($className);
             };
-            
+
+            $this->m_conversionFunction = $conversionFunction;
+        } else {
             $this->m_conversionFunction = $conversionFunction;
         }
-        else
-        {
-            $this->m_conversionFunction = $conversionFunction;
-        }
-        
+
         // Specify extensions that may be loaded
         spl_autoload_extensions('.php, .class.php');
-        spl_autoload_register(array( $this, 'loaderCallback'));
+        spl_autoload_register(array($this, 'loaderCallback'));
     }
-
 
     /**
      * Callback function that is passed to the spl_autoload_register. This function is run whenever
@@ -62,12 +56,9 @@ class Autoloader
      */
     public function loaderCallback($className)
     {
-        if (class_exists($className, false))
-        {
+        if (class_exists($className, false)) {
             $result = true;
-        }
-        else
-        {
+        } else {
             $result = false;
 
             $filename = call_user_func($this->m_conversionFunction, $className);
@@ -75,24 +66,47 @@ class Autoloader
             // position of slash in the class, to denote namespace presence
             $lastBackslashPositionIfNamespacePresent = strrpos($filename, '\\') ?: -1;
             $lastBackslashPositionIfNamespacePresent++; // to get the actual position, that's why -1 on the line before
-            $filenameWithoutNamespace = substr($filename, $lastBackslashPositionIfNamespacePresent);
+            $filenameWithoutNamespace                = substr($filename,
+                $lastBackslashPositionIfNamespacePresent);
 
-            foreach ($this->m_classDirs as $potentialFolder)
-            {
-                $absoluteFilePath         = $potentialFolder . "/" . $filenameWithoutNamespace;
+            foreach ($this->m_classDirs as $potentialFolder) {
+                // Check for recursive directory
+                if ($this->endsWith($potentialFolder, '*')) {
 
-                if (file_exists($absoluteFilePath))
-                {
-                    require_once($absoluteFilePath);
+                    $folderToRecur = substr($potentialFolder, 0, -1);
+                    $it            = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($folderToRecur));
+                    $it->rewind();
 
-                    if(class_exists($className, false))
-                    {
-                        $result = true;
+                    while ($it->valid()) {
+
+                        $absoluteFilePath = $it->key();
+
+                        if (!$it->isDot() && $this->endsWith($absoluteFilePath,
+                                $filenameWithoutNamespace)) {
+
+                            if ($this->tryAutoload($absoluteFilePath, $className)) {
+                                $result = true;
+                                break;
+                            }
+                        }
+
+                        $it->next();
+                    }
+
+                    if ($result) {
                         break;
                     }
-                    else
-                    {
-                        continue;
+                } else {
+                    $folderWithEndSlash = $potentialFolder.($this->endsWith($potentialFolder, '/') ? ''
+                            : '/');
+                    $absoluteFilePath   = $folderWithEndSlash.$filenameWithoutNamespace;
+
+                    if (file_exists($absoluteFilePath)) {
+
+                        if ($this->tryAutoload($absoluteFilePath, $className)) {
+                            $result = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -100,8 +114,7 @@ class Autoloader
 
         return $result;
     }
-    
-    
+
     /**
      * Given a class name, this function will convert it to the relevant filename
      * This function could be improved to handle abstract classes later which do not follow the 
@@ -113,7 +126,37 @@ class Autoloader
      */
     public static function convertClassNameToFileName($className)
     {
-        $filename = $className . '.php';
+        $filename = $className.'.php';
         return $filename;
+    }
+
+    /**
+     * Check if a string ends with a character or a string
+     * @param string $string String to be checked
+     * @param string $checkString The check character or string
+     * @return bool
+     */
+    private function endsWith(string $string, string $checkString): bool
+    {
+        return substr($string, 0 - strlen($checkString)) === $checkString;
+    }
+
+    /**
+     * Try to autoload a class from a file path
+     * @param string $filePath Path of the file
+     * @param string $className Class name
+     * @return bool
+     */
+    private function tryAutoload(string $filePath, string $className): bool
+    {
+        require_once($filePath);
+
+        if (class_exists($className, false)) {
+            $return = true;
+        } else {
+            $return = false;
+        }
+
+        return $return;
     }
 }
