@@ -1,9 +1,9 @@
 <?php
 /**
  * This singleton class automatically includes classes based on the name of the class
- * It alleviates the need of having a require_once() statement every time you want to 
+ * It alleviates the need of having a require_once() statement every time you want to
  * include a certain class
- * 
+ *
  * WARNING: Autoloading is not available if using PHP in CLI INTERACTIVE mode, however using on CLI
  * scripts is fine.
  */
@@ -12,6 +12,7 @@ namespace iRAP\Autoloader;
 
 class Autoloader
 {
+    public static $strict         = false;
     private $m_classDirs          = array();
     private $m_conversionFunction = null;
 
@@ -48,9 +49,9 @@ class Autoloader
      * Callback function that is passed to the spl_autoload_register. This function is run whenever
      * php is trying to find a class to load. This needs to be public for the spl_auto_loader
      * but is not meant to be called from the outside by the programmers.
-     * 
+     *
      * @param className - the name of the class that we are trying to automatically load.
-     * 
+     *
      * @return result - boolean indicator whether we successfully included the file or not.
      * @throws exception if we found two possible places where the class can be loaded.
      */
@@ -81,12 +82,19 @@ class Autoloader
 
                         $absoluteFilePath = $it->key();
 
-                        if (!$it->isDot() && $this->endsWith($absoluteFilePath,
-                                $filenameWithoutNamespace)) {
+                        if (!$it->isDot()) {
 
-                            if ($this->tryAutoload($absoluteFilePath, $className)) {
-                                $result = true;
-                                break;
+                            if (self::$strict) {
+
+                                if ((self::$strict && $this->endsWith($absoluteFilePath,
+                                        $filenameWithoutNamespace)) || (!self::$strict && $this->endsWith(strtolower($absoluteFilePath),
+                                        strtolower($filenameWithoutNamespace)))) {
+
+                                    if ($this->tryAutoload($absoluteFilePath, $className)) {
+                                        $result = true;
+                                        break;
+                                    }
+                                }
                             }
                         }
 
@@ -97,16 +105,21 @@ class Autoloader
                         break;
                     }
                 } else {
-                    $folderWithEndSlash = $potentialFolder.($this->endsWith($potentialFolder, '/') ? ''
-                            : '/');
+                    $folderWithEndSlash = realpath($potentialFolder).'/';
                     $absoluteFilePath   = $folderWithEndSlash.$filenameWithoutNamespace;
 
-                    if (file_exists($absoluteFilePath)) {
-
-                        if ($this->tryAutoload($absoluteFilePath, $className)) {
-                            $result = true;
-                            break;
+                    foreach (\glob($folderWithEndSlash.'*.php') as $file) {
+                        if ((self::$strict && $file === $absoluteFilePath) || (!self::$strict && \strtolower($file)
+                            === \strtolower($absoluteFilePath))) {
+                            if ($this->tryAutoload($absoluteFilePath, $className)) {
+                                $result = true;
+                                break;
+                            }
                         }
+                    }
+
+                    if ($result) {
+                        break;
                     }
                 }
             }
@@ -117,11 +130,11 @@ class Autoloader
 
     /**
      * Given a class name, this function will convert it to the relevant filename
-     * This function could be improved to handle abstract classes later which do not follow the 
+     * This function could be improved to handle abstract classes later which do not follow the
      * normal rule specified by zend. E.g. my_classAbstract.class.php compared to my_class.php
-     * 
+     *
      * @param className - the specified class that we are going to convert to a filename.
-     * 
+     *
      * @return filename - the name of the file that the class should be defined in.
      */
     public static function convertClassNameToFileName($className)
