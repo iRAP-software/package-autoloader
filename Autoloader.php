@@ -84,16 +84,13 @@ class Autoloader
 
                         if (!$it->isDot()) {
 
-                            if (self::$strict) {
+                            if ((self::$strict && $this->endsWith($absoluteFilePath,
+                                    $filenameWithoutNamespace)) || (!self::$strict && $this->endsWith(strtolower($absoluteFilePath),
+                                    strtolower($filenameWithoutNamespace)))) {
 
-                                if ((self::$strict && $this->endsWith($absoluteFilePath,
-                                        $filenameWithoutNamespace)) || (!self::$strict && $this->endsWith(strtolower($absoluteFilePath),
-                                        strtolower($filenameWithoutNamespace)))) {
-
-                                    if ($this->tryAutoload($absoluteFilePath, $className)) {
-                                        $result = true;
-                                        break;
-                                    }
+                                if ($this->tryAutoload($absoluteFilePath, $className)) {
+                                    $result = true;
+                                    break;
                                 }
                             }
                         }
@@ -105,7 +102,7 @@ class Autoloader
                         break;
                     }
                 } else {
-                    $folderWithEndSlash = realpath($potentialFolder).'/';
+                    $folderWithEndSlash = \realpath($potentialFolder).'/';
                     $absoluteFilePath   = $folderWithEndSlash.$filenameWithoutNamespace;
 
                     foreach (\glob($folderWithEndSlash.'*.php') as $file) {
