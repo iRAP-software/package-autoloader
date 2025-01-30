@@ -10,6 +10,8 @@
 
 namespace iRAP\Autoloader;
 
+use Closure;
+
 class Autoloader
 {
     public static $strict         = false;
@@ -26,7 +28,7 @@ class Autoloader
      *                                      convention is assumed.
      * @return void
      */
-    public function __construct($classDirs, Closure $conversionFunction = null)
+    public function __construct($classDirs, ?Closure $conversionFunction = null)
     {
         $this->m_classDirs = $classDirs; # specify your model/utility/library folders here
         # If a conversion function has not been specified, then use our own default.
